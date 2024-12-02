@@ -1,0 +1,37 @@
++ Binance       https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
+['price']
++ Bybit         https://api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT 
+["result", "list", 0, "bid1Price"]
++ KuCoin        https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=BTC-USDT 
+["data", "price"]
++ OKX           https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT
+["data", 0, "last"]
++ MEXC          https://www.mexc.com/open/api/v2/market/ticker?symbol=BTC_USDT
+["data", 0, "last"]
++ Gate.io       https://api.gateio.ws/api/v4/spot/tickers?currency_pair=BTC_USDT
+[0, "last"]
++ Crypto.com    https://api.huobi.pro/market/detail/merged?symbol=btcusdt
+['tick', "bid", 0]
++ Huobi (HTX)   https://api.crypto.com/v2/public/get-ticker?instrument_name=BTC_USDT
+["result", "data", 0, "b"]
+
+- Bitget    
+- BingX
+- Phemex
+- Bitfinex
+- Kraken
+- Gemini
+- Coinbase
+- Pionex
+
+https://api.binance.com/api/v3/ticker/price
+https://api.kucoin.com/api/v1/market/allTickers
+https://www.okx.com/api/v5/market/tickers?instType=SPOT
+https://api.bybit.com/v5/market/tickers?category=spot
+https://api.crypto.com/v2/public/get-ticker
+https://api.huobi.pro/market/tickers
+https://api.gateio.ws/api/v4/spot/tickers
+https://api.poloniex.com/markets/ticker24h
+https://api.bitget.com/api/spot/v1/market/tickers
+https://api.probit.com/api/exchange/v1/ticker
+https://ascendex.com/api/pro/v1/ticker

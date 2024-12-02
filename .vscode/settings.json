@@ -1,0 +1,5 @@
+{
+    "code-runner.executorMap": {
+        "python": "C:/Users/alexa/Projects/proj_for_tests/.venv/Scripts/python.exe -u -X utf8"
+    }
+}
