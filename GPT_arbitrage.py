@@ -1,7 +1,7 @@
-a = {}
-for el in range(10):
-    a['pair'] = []
-    a['pair'].append({'Binance': 92212})
-    a['pair'].append({'Bybit': 92212})
+import requests
 
-print(a)
+
+response = requests.get('https://ascendex.com/api/pro/v1/ticker')
+for el in response.json()['data']:
+    if el['symbol'] == "KAI/USDT":
+        print(el['ask'])

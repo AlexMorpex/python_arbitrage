@@ -1,7 +1,8 @@
 import aiohttp
 import asyncio
-import pandas as pd
-import numpy as np
+import logging
+
+DEBUG = False
 
 
 async def fetch_prices_binance(session: aiohttp.ClientSession):
@@ -83,7 +84,10 @@ async def fetch_prices_poloniex(session: aiohttp.ClientSession):
         price_list = {
             res["symbol"].replace('_', ''): float(res['ask'])
             for res in data
-            if res["symbol"].replace('_', '').endswith('USDT') and res['ask'] is not None and float(res['ask']) != 0
+            if res["symbol"].replace('_', '').endswith('USDT')
+            and res['ask'] is not None
+            and float(res['ask']) != 0
+            and float(res['amount']) != 0
         }
         return price_list
 
@@ -99,8 +103,6 @@ async def fetch_prices_bitget(session: aiohttp.ClientSession):
         }
         return price_list
 
-# ?? Хз че за биржа, долгий ответ, тупые ключи
-
 
 async def fetch_prices_probit(session: aiohttp.ClientSession):
     url = 'https://api.probit.com/api/exchange/v1/ticker'
@@ -112,6 +114,7 @@ async def fetch_prices_probit(session: aiohttp.ClientSession):
             if res["market_id"].replace('-', '').endswith('USDT') and res['last'] is not None
         }
         return price_list
+# ?? Хз че за биржа, долгий ответ, тупые ключи
 
 
 async def fetch_prices_ascendex(session: aiohttp.ClientSession):
@@ -121,14 +124,17 @@ async def fetch_prices_ascendex(session: aiohttp.ClientSession):
         price_list = {
             res["symbol"].replace('/', ''): float(res['ask'][0])
             for res in data['data']
-            if res["symbol"].replace('/', '').endswith('USDT') and res['ask'][0] is not None and float(res['ask'][0]) != 0
+            if res["symbol"].replace('/', '').endswith('USDT') and
+            res['ask'][0] is not None and
+            float(res['ask'][0]) != 0 and
+            float(res['ask'][0]) != 999999999
         }
         return price_list
 
 #################################################################
 
 
-async def print_exchanges_info() -> dict:
+async def fetch_all_prices() -> dict:
     async with aiohttp.ClientSession() as session:
         tasks = {
             'Binance': fetch_prices_binance(session),
@@ -138,47 +144,104 @@ async def print_exchanges_info() -> dict:
             'Poloniex': fetch_prices_poloniex(session),
             'Bitget': fetch_prices_bitget(session),
             'Ascendex': fetch_prices_ascendex(session),
-            'Probit': fetch_prices_probit(session),
+            # 'Probit': fetch_prices_probit(session),
             'Okx': fetch_prices_okx(session),
         }
 
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
         all_prices = {}
 
+        if DEBUG:
+            for exchange, result in zip(tasks.keys(), results):
+                if isinstance(result, Exception):
+                    print(f"Ошибка при запросе к {exchange}: {result}")
+                else:
+                    print(f"{exchange}: {len(result)} пар")
+
         for exchange, result in zip(tasks.keys(), results):
             if isinstance(result, Exception):
                 print(f"Ошибка при запросе к {exchange}: {result}")
             else:
-                print(f"{exchange}: {len(result)} пар")
                 all_prices[exchange] = result
 
     return all_prices
 
 
-async def sort_prices(prices_dict: dict):
-    exchanges_list = prices_dict.keys()
-    sorted_dict = {}
-    for exchange in exchanges_list:
-        for pair in prices_dict[exchange]:
-            if pair not in sorted_dict:
-                sorted_dict[pair] = []
-            sorted_dict[pair].append({exchange: prices_dict[exchange][pair]})
+def filter_prices(prices_dict: dict):
+    filtered_dict = {}
 
-    list_to_remove = []
-    for pair in sorted_dict.keys():
-        if len(sorted_dict[pair]) < 2:
-            list_to_remove.append(pair)
+    for exchange, pairs in prices_dict.items():
+        for pair, price in pairs.items():
+            filtered_dict.setdefault(pair, []).append({exchange: price})
 
-    for pair in list_to_remove:
-        sorted_dict.pop(pair)
+    filtered_dict = {pair: data for pair,
+                     data in filtered_dict.items() if len(data) >= 2}
 
-    for pair in sorted_dict:
-        print(pair, ': ',
-              len(sorted_dict[pair]),
-              )
-        for el in sorted_dict[pair]:
-            print(el, end='')
-        print('\n')
+    if DEBUG:
+        for pair, data in filtered_dict.items():
+            print(pair, data)
 
-info = asyncio.run(print_exchanges_info())
-asyncio.run(sort_prices(info))
+    return filtered_dict
+
+
+def sort_prices(filtered_dict: dict):
+    sorted_list = []
+
+    for pair, price_list in filtered_dict.items():
+        first_exchange = ''
+        min_price = float('inf')
+        second_exchange = ''
+        max_price = -float('inf')
+
+        for price_dict in price_list:
+            for exchange, price in price_dict.items():
+                if price < min_price:
+                    min_price = price
+                    first_exchange = exchange
+                if price > max_price:
+                    max_price = price
+                    second_exchange = exchange
+
+        if min_price > 0:
+            percent = ((max_price - min_price) / min_price) * 100
+        else:
+            percent = 0
+
+        if percent < 1:
+            continue
+        sorted_list.append({
+            pair: round(percent, 3),
+            'Buy': {
+                'Exchange': first_exchange,
+                'Price': min_price
+            },
+            'Sell': {
+                'Exchange': second_exchange,
+                'Price': max_price
+            }
+        })
+
+    # Сортировка списка по процентам (по убыванию)
+    sorted_list = sorted(sorted_list, key=lambda x: list(
+        x.values())[0], reverse=True)
+
+    return sorted_list
+
+
+async def main():
+
+    all_prices = await fetch_all_prices()
+
+    if not all_prices:
+        logging.error("Не удалось получить данные с бирж.")
+        return {}
+
+    filtered_prices = filter_prices(all_prices)
+    sorted_prices = sort_prices(filtered_prices)
+
+    for el in sorted_prices:
+        print(el)
+    return sorted_prices
+
+if __name__ == '__main__':
+    asyncio.run(main())
