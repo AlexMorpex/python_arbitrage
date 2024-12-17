@@ -138,7 +138,7 @@ async def fetch_prices_probit(session: aiohttp.ClientSession):
             for res in data['data']
             if res["market_id"].replace('-', '').endswith('USDT')
             and res['last'] is not None
-            and float(res['quote_volume']) > 1
+            and float(res['quote_volume']) > 1000
         }
         return price_list
 # ?? Хз че за биржа, долгий ответ, тупые ключи
@@ -246,10 +246,10 @@ def sort_prices(filtered_dict: dict):
         else:
             percent = 0
 
-        if percent < 1:
+        if percent < 5 or percent > 75:
             continue
         sorted_list.append({
-            pair: round(percent, 3),
+            pair: round(percent, 1),
             'Buy': {
                 'Exchange': first_exchange,
                 'Price': min_price
@@ -301,5 +301,4 @@ async def main():
     return sorted_prices
 
 if __name__ == '__main__':
-    while True:
-        asyncio.run(main())
+    asyncio.run(main())
