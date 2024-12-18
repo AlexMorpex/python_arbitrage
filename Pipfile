@@ -4,15 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-matplotlib = "*"
-pandas = "*"
-pyside6 = "*"
-mplfinance = "*"
-websockets = "*"
-mysql-connector-python = "*"
 aiohttp = "*"
-websocket-client = "*"
-ccxt = "*"
 
 [dev-packages]
 
